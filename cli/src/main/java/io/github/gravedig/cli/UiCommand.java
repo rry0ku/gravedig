@@ -3,6 +3,7 @@ package io.github.gravedig.cli;
 import io.github.gravedig.server.GravedigServer;
 import io.github.gravedig.server.db.DatabaseManager;
 import io.github.gravedig.server.security.AuthManager;
+import io.github.gravedig.server.ui.NativeAppWindow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine.Command;
@@ -10,15 +11,14 @@ import picocli.CommandLine.Option;
 
 import java.awt.Desktop;
 import java.awt.GraphicsEnvironment;
+import java.io.File;
 import java.net.URI;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 
 @Command(
         name = "ui",
-        description = "Launch the local gravedig GUI server on 127.0.0.1:7777",
+        description = "Launch the local gravedig desktop GUI application on 127.0.0.1:7777",
         mixinStandardHelpOptions = true
 )
 public class UiCommand implements Callable<Integer> {
@@ -33,8 +33,20 @@ public class UiCommand implements Callable<Integer> {
     private int port;
 
     @Option(
+            names = {"--no-window", "--headless"},
+            description = "Run headless server mode without opening the application window"
+    )
+    private boolean headlessMode;
+
+    @Option(
+            names = {"--browser"},
+            description = "Open in external system web browser instead of the embedded desktop window"
+    )
+    private boolean openExternalBrowser;
+
+    @Option(
             names = {"--no-browser"},
-            description = "Do not automatically launch the browser"
+            description = "Alias for headless mode (do not open window or browser)"
     )
     private boolean noBrowser;
 
@@ -48,15 +60,15 @@ public class UiCommand implements Callable<Integer> {
             names = {"-t", "--token"},
             description = "Custom secret authentication token (default: securely auto-generated)"
     )
-    private String token;
+    private String customToken;
 
     @Override
     public Integer call() {
-        DatabaseManager dbManager = (dbPath != null && !dbPath.isBlank())
-                ? DatabaseManager.createForFile(Paths.get(dbPath))
-                : DatabaseManager.createDefault();
+        DatabaseManager dbManager = resolveDatabaseManager();
+        AuthManager authManager = (customToken != null && !customToken.isBlank())
+                ? new AuthManager(customToken.trim())
+                : new AuthManager();
 
-        AuthManager authManager = new AuthManager(token);
         GravedigServer server = new GravedigServer(port, dbManager, authManager);
 
         try {
@@ -65,18 +77,26 @@ public class UiCommand implements Callable<Integer> {
             String fullUrl = server.getAuthenticatedUrl();
             printBanner(server.getPort(), server.getToken(), fullUrl);
 
-            if (!noBrowser) {
+            if (openExternalBrowser) {
                 openBrowser(fullUrl);
+                waitForShutdown(server);
+            } else if (!headlessMode && !noBrowser && NativeAppWindow.isSupported()) {
+                System.out.println("  Opening Gravedig native desktop application window...\n");
+                NativeAppWindow.open(
+                        fullUrl,
+                        "Gravedig — Dig up the secrets your git history forgot to bury",
+                        1320,
+                        880,
+                        server::stop
+                );
+            } else {
+                if (!headlessMode && !noBrowser) {
+                    System.out.println("  Native window not supported in current environment; running headless on " + fullUrl);
+                }
+                waitForShutdown(server);
             }
 
-            CountDownLatch latch = new CountDownLatch(1);
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                System.out.println("\nShutting down gravedig server...");
-                server.stop();
-                latch.countDown();
-            }));
-
-            latch.await();
+            server.stop();
             return 0;
 
         } catch (InterruptedException e) {
@@ -91,10 +111,36 @@ public class UiCommand implements Callable<Integer> {
         }
     }
 
+    private void waitForShutdown(GravedigServer server) throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("\nShutting down gravedig server...");
+            server.stop();
+            latch.countDown();
+        }));
+        latch.await();
+    }
+
+    private DatabaseManager resolveDatabaseManager() {
+        if (dbPath != null && !dbPath.isBlank()) {
+            String path = dbPath.trim();
+            if (":memory:".equalsIgnoreCase(path)) {
+                return DatabaseManager.createInMemory();
+            }
+            File file = new File(path);
+            File parent = file.getParentFile();
+            if (parent != null && !parent.exists()) {
+                parent.mkdirs();
+            }
+            return new DatabaseManager("jdbc:sqlite:" + file.getAbsolutePath());
+        }
+        return DatabaseManager.createDefault();
+    }
+
     private void printBanner(int actualPort, String authToken, String fullUrl) {
         System.out.println();
         System.out.println("  \u001B[33m┌─────────────────────────────────────────────────────────────┐\u001B[0m");
-        System.out.println("  \u001B[33m│\u001B[0m  \u001B[1mgravedig UI Server Active\u001B[0m                                 \u001B[33m│\u001B[0m");
+        System.out.println("  \u001B[33m│\u001B[0m  \u001B[1mgravedig Desktop Application Active\u001B[0m                       \u001B[33m│\u001B[0m");
         System.out.println("  \u001B[33m│\u001B[0m  \"Dig up the secrets your git history forgot to bury.\"      \u001B[33m│\u001B[0m");
         System.out.println("  \u001B[33m├─────────────────────────────────────────────────────────────┤\u001B[0m");
         System.out.printf("  \u001B[33m│\u001B[0m  Local URL:  \u001B[36m%s\u001B[0m\n", fullUrl);
@@ -102,7 +148,7 @@ public class UiCommand implements Callable<Integer> {
         System.out.printf("  \u001B[33m│\u001B[0m  Port:       %d\n", actualPort);
         System.out.printf("  \u001B[33m│\u001B[0m  Auth Token: \u001B[32m%s\u001B[0m\n", authToken);
         System.out.println("  \u001B[33m├─────────────────────────────────────────────────────────────┤\u001B[0m");
-        System.out.println("  \u001B[33m│\u001B[0m  Press \u001B[1mCtrl+C\u001B[0m to stop server                             \u001B[33m│\u001B[0m");
+        System.out.println("  \u001B[33m│\u001B[0m  Close desktop window or press \u001B[1mCtrl+C\u001B[0m to exit              \u001B[33m│\u001B[0m");
         System.out.println("  \u001B[33m└─────────────────────────────────────────────────────────────┘\u001B[0m");
         System.out.println();
     }

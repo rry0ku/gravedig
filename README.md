@@ -72,8 +72,8 @@ Gravedig excavates the full commit tree, calculates diffs via pure Java AST pars
 - **Full Git History Excavation**: Analyzes all commits, tags, and stashes via Eclipse JGit without requiring an external `git` binary.
 - **ALIVE vs. BURIED Secret Detection**: Know immediately whether an exposure is active in the codebase or hidden in past history.
 - **Shannon Entropy Analysis**: Multi-character entropy calculation prevents false alarms on generic variable names and validates high-randomness tokens.
-- **Local Web GUI**: Built with Svelte 5, Vite, and TypeScript. Zero third-party component libraries; custom SVG Risk Gauge, live WebSocket scan runner, filterable findings explorer, and rule sandbox.
-- **Single Shaded Uber-JAR**: The entire frontend is bundled inside `gravedig.jar`. Run `java -jar gravedig.jar ui` and it serves the complete app on `127.0.0.1:7777`.
+- **Native Desktop Application & Local GUI**: Built with Svelte 5, Vite, and TypeScript. Zero third-party component libraries; custom SVG Risk Gauge, live WebSocket scan runner, filterable findings explorer, and rule sandbox. Opens directly inside an embedded native desktop application window via WebKitGTK and JNA.
+- **Single Shaded Uber-JAR**: The entire frontend is bundled inside `gravedig.jar`. Run `java -jar gravedig.jar ui` and it serves the complete app on `127.0.0.1:7777` and launches the desktop app window.
 - **Pre-Commit Hook Integration**: Install with `gravedig hook install` to automatically block commits containing leaked secrets.
 - **Enterprise Output Formats**: Export audit reports in **OASIS SARIF 2.1.0** (GitHub Code Scanning compatible), interactive self-contained **HTML**, **JSON**, or **CSV**.
 - **Zero Foreign Process Execution**: Strictly verified by automated security test suites; zero calls to `ProcessBuilder` or `Runtime.exec`.
@@ -111,7 +111,7 @@ Gravedig ships with 15 production-ready detection rules:
 
 ```bash
 # Clone the repository
-git clone https://github.com/gravedig/gravedig.git
+git clone https://github.com/rry0ku/gravedig.git
 cd gravedig
 
 # Build frontend & package shaded uber-jar
@@ -123,13 +123,13 @@ The executable uber-jar is created at: `cli/target/gravedig.jar`.
 
 ---
 
-### 2. Launch Local Web GUI
+### 2. Launch Desktop GUI Application
 
 ```bash
 java -jar cli/target/gravedig.jar ui
 ```
 
-This starts the local Javalin server on `127.0.0.1:7777` and opens your browser:
+This starts the local Javalin server on `127.0.0.1:7777` and launches the **native desktop window**:
 - **Dashboard**: Risk Score Gauge (0–100), ALIVE vs. BURIED count cards, severity breakdown.
 - **Live Scan Runner**: Real-time WebSocket streaming progress bar with active commit and findings tickers.
 - **Findings Explorer**: Filterable table with search, severity filter, presence toggle, and pagination.
@@ -138,8 +138,11 @@ This starts the local Javalin server on `127.0.0.1:7777` and opens your browser:
 
 Options:
 ```bash
-# Run headless / without opening default browser
-java -jar cli/target/gravedig.jar ui --no-browser --port 8080
+# Run in headless server mode (no window, no browser)
+java -jar cli/target/gravedig.jar ui --no-window --port 8080
+
+# Launch in an external web browser instead of native desktop window
+java -jar cli/target/gravedig.jar ui --browser
 
 # Specify custom SQLite database path
 java -jar cli/target/gravedig.jar ui --db ./my-audits.db
