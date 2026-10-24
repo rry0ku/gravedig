@@ -45,4 +45,4 @@ jobs:
         run: mvn clean verify --batch-mode
 
       - name: Verify Zero Foreign Execution Security Guarantee
-        run: mvn test -Dtest=ForbiddenExecutionSecurityTest --batch-mode
+        run: mvn test -pl core -Dtest=ForbiddenExecutionSecurityTest -Dsurefire.failIfNoSpecifiedTests=false --batch-mode
