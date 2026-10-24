@@ -120,9 +120,20 @@
           <div class="result-box {result.matched ? 'matched' : 'not-matched'}">
             <div class="status-banner">
               {#if result.matched}
-                <span class="matched-badge">✓ MATCH DETECTED ({result.matchCount} secret{result.matchCount > 1 ? 's' : ''})</span>
+                <span class="matched-badge">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  MATCH DETECTED ({result.matchCount || result.matches?.length || 1} secret{(result.matchCount || result.matches?.length || 1) > 1 ? 's' : ''})
+                </span>
               {:else}
-                <span class="unmatched-badge">✗ NO SECRET MATCHED</span>
+                <span class="unmatched-badge">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                  NO SECRET MATCHED
+                </span>
               {/if}
             </div>
 
@@ -141,13 +152,26 @@
               {/if}
               {#if result.entropy !== undefined && result.entropy > 0}
                 <div class="res-row">
-                  <span class="res-label">Entropy:</span>
+                  <span class="res-label">Avg Entropy:</span>
                   <span class="res-val mono">{result.entropy.toFixed(2)} bits/char</span>
+                </div>
+              {/if}
+              {#if result.matches && result.matches.length > 0}
+                <div class="res-row-full">
+                  <span class="res-label">Detected Secrets ({result.matches.length}):</span>
+                  <div class="matches-list">
+                    {#each result.matches as m}
+                      <div class="match-item">
+                        <code class="match-redacted">{m.redacted}</code>
+                        <span class="match-entropy">{m.entropy.toFixed(2)} bits/char</span>
+                      </div>
+                    {/each}
+                  </div>
                 </div>
               {/if}
               {#if result.maskedSnippet}
                 <div class="res-row-full">
-                  <span class="res-label">Redacted Preview:</span>
+                  <span class="res-label">Redacted Snippet:</span>
                   <pre class="masked-preview">{result.maskedSnippet}</pre>
                 </div>
               {/if}
@@ -314,11 +338,17 @@
     color: var(--severity-critical);
     font-weight: 700;
     font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
   }
   .unmatched-badge {
     color: var(--accent-green);
     font-weight: 700;
     font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
   }
 
   .result-details {
@@ -348,6 +378,29 @@
     flex-direction: column;
     gap: 0.35rem;
     margin-top: 0.5rem;
+  }
+  .matches-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .match-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-main);
+    border: 1px solid var(--border-subtle);
+    padding: 0.35rem 0.65rem;
+    border-radius: var(--radius-sm);
+  }
+  .match-redacted {
+    color: var(--accent-green);
+    font-size: 0.8rem;
+  }
+  .match-entropy {
+    color: var(--text-dim);
+    font-size: 0.725rem;
+    font-family: var(--font-mono);
   }
   .masked-preview {
     background: var(--bg-main);

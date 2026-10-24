@@ -147,9 +147,17 @@
               <td>
                 <span class="badge badge-{finding.presence.toLowerCase()}">
                   {#if finding.presence === 'ALIVE'}
-                    ⚡ ALIVE
+                    <svg class="badge-icon-svg" width="8" height="8" viewBox="0 0 8 8" fill="currentColor">
+                      <circle cx="4" cy="4" r="3"/>
+                    </svg>
+                    ALIVE
                   {:else}
-                    ⚰ BURIED
+                    <svg class="badge-icon-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="4"/>
+                      <line x1="2" y1="12" x2="8" y2="12"/>
+                      <line x1="16" y1="12" x2="22" y2="12"/>
+                    </svg>
+                    BURIED
                   {/if}
                 </span>
               </td>
@@ -261,6 +269,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-wrap: wrap;
   }
 
   .clear-btn {
@@ -306,17 +315,17 @@
   }
 
   .status-tag {
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 600;
-    padding: 0.2rem 0.5rem;
-    border-radius: var(--radius-sm);
+    padding: 0;
+    background: transparent;
     text-transform: uppercase;
     font-family: var(--font-mono);
   }
-  .status-open { color: var(--severity-high); background: var(--severity-high-bg); }
-  .status-false_positive { color: var(--text-dim); background: var(--presence-buried-bg); }
-  .status-resolved { color: var(--accent-green); background: var(--accent-green-bg); }
-  .status-accepted_risk { color: var(--severity-medium); background: var(--severity-medium-bg); }
+  .status-open { color: #f97316; }
+  .status-false_positive { color: #94a3b8; }
+  .status-resolved { color: #10b981; }
+  .status-accepted_risk { color: #eab308; }
 
   .rule-name {
     font-weight: 600;

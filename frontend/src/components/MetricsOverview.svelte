@@ -52,12 +52,20 @@
     <div class="card-header">
       <span class="card-title">BURIED SECRETS</span>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        <circle cx="12" cy="12" r="4"/>
+        <line x1="2" y1="12" x2="8" y2="12"/>
+        <line x1="16" y1="12" x2="22" y2="12"/>
       </svg>
     </div>
     <div class="card-value buried-value">{buriedCount}</div>
     <div class="card-subtext">Hidden in deleted files & past git commits</div>
-    <div class="tombstone-tag">Git history excavation</div>
+    <div class="excavation-tag">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 14 14"/>
+      </svg>
+      Historical revision recovery
+    </div>
   </div>
 
   <!-- Scan Scope & Stats Card -->
@@ -78,7 +86,7 @@
       </div>
       <div class="stat-row">
         <span class="stat-name">Scan Time:</span>
-        <span class="stat-num">{formatDuration(scan?.startedAt, scan?.completedAt)}</span>
+        <span class="stat-num">{formatDuration(scan?.startedAt || scan?.createdAt, scan?.completedAt)}</span>
       </div>
     </div>
   </div>
@@ -241,10 +249,13 @@
   .buried-value {
     color: var(--text-muted);
   }
-  .tombstone-tag {
+  .excavation-tag {
     margin-top: 0.5rem;
     font-size: 0.7rem;
     color: var(--text-dim);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
   }
 
   .stat-rows {

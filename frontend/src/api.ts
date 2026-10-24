@@ -56,14 +56,23 @@ export async function validateToken(): Promise<boolean> {
 }
 
 export async function startScan(params: {
+  path?: string;
   targetPath?: string;
   includeHistory?: boolean;
   entropyCheck?: boolean;
   offlineValidation?: boolean;
 }): Promise<ScanRecord> {
+  const selectedPath = params.path || params.targetPath || '.';
+  const payload = {
+    path: selectedPath,
+    targetPath: selectedPath,
+    includeHistory: params.includeHistory ?? true,
+    entropyCheck: params.entropyCheck ?? true,
+    offlineValidation: params.offlineValidation ?? true
+  };
   return request<ScanRecord>('/api/scans', {
     method: 'POST',
-    body: JSON.stringify(params)
+    body: JSON.stringify(payload)
   });
 }
 
@@ -96,9 +105,52 @@ export async function patchFinding(id: string, status: FindingStatus, comment?: 
   });
 }
 
+export async function revealFinding(id: string): Promise<{ id: string; secretRaw: string; lineContent: string }> {
+  return request<{ id: string; secretRaw: string; lineContent: string }>(`/api/findings/${id}/reveal`);
+}
+
+export interface ExportSaveResult {
+  success: boolean;
+  filePath: string;
+  filename: string;
+  format: string;
+  size: number;
+  content: string;
+}
+
 export function getExportUrl(scanId: string, format: 'json' | 'sarif' | 'html' | 'csv'): string {
   const token = getToken();
   return `/api/scans/${scanId}/export?format=${format}${token ? '&token=' + encodeURIComponent(token) : ''}`;
+}
+
+export async function saveExport(
+  scanId: string,
+  format: 'json' | 'sarif' | 'html' | 'csv',
+  destinationDir?: string
+): Promise<ExportSaveResult> {
+  return request<ExportSaveResult>(`/api/scans/${scanId}/export-save?format=${format}`, {
+    method: 'POST',
+    body: JSON.stringify({ format, destinationDir })
+  });
+}
+
+export async function openFileOnSystem(path: string): Promise<{ success: boolean; message: string }> {
+  return request<{ success: boolean; message: string }>('/api/fs/open-file', {
+    method: 'POST',
+    body: JSON.stringify({ path })
+  });
+}
+
+export async function deleteScan(scanId: string): Promise<void> {
+  await request<{ success: boolean }>(`/api/scans/${scanId}`, {
+    method: 'DELETE'
+  });
+}
+
+export async function clearAllScans(): Promise<void> {
+  await request<{ success: boolean }>(`/api/scans`, {
+    method: 'DELETE'
+  });
 }
 
 export async function listRules(): Promise<Rule[]> {
@@ -108,11 +160,18 @@ export async function listRules(): Promise<Rule[]> {
 export async function testRule(payload: {
   ruleId?: string;
   pattern?: string;
-  snippet: string;
+  snippet?: string;
+  sample?: string;
 }): Promise<RuleTestResponse> {
+  const text = payload.snippet ?? payload.sample ?? '';
   return request<RuleTestResponse>('/api/rules/test', {
     method: 'POST',
-    body: JSON.stringify(payload)
+    body: JSON.stringify({
+      ruleId: payload.ruleId,
+      pattern: payload.pattern,
+      sample: text,
+      snippet: text
+    })
   });
 }
 
@@ -138,4 +197,18 @@ export function createScanWebSocket(
   if (onClose) ws.onclose = onClose;
   if (onError) ws.onerror = onError;
   return ws;
+}
+
+export interface ChooseFolderResult {
+  success: boolean;
+  selected: boolean;
+  path?: string;
+  message?: string;
+}
+
+export async function chooseFolder(initialPath?: string): Promise<ChooseFolderResult> {
+  return request<ChooseFolderResult>('/api/fs/choose-folder', {
+    method: 'POST',
+    body: JSON.stringify({ initialPath: initialPath || '' })
+  });
 }

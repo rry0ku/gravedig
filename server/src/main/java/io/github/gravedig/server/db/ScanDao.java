@@ -137,6 +137,15 @@ public class ScanDao {
         }
     }
 
+    public void deleteAll() {
+        String sql = "DELETE FROM scans;";
+        try (Connection conn = db.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to delete all scans", e);
+        }
+    }
+
     private ScanRecord mapRow(ResultSet rs) throws SQLException {
         ScanRecord r = new ScanRecord();
         r.setId(rs.getString("id"));

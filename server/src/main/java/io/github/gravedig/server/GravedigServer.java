@@ -3,6 +3,7 @@ package io.github.gravedig.server;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.github.gravedig.server.api.FileSystemController;
 import io.github.gravedig.server.api.RuleController;
 import io.github.gravedig.server.api.ScanController;
 import io.github.gravedig.server.db.DatabaseManager;
@@ -77,6 +78,7 @@ public class GravedigServer implements Closeable {
         // Controllers
         ScanController scanController = new ScanController(scanService);
         RuleController ruleController = new RuleController(scanService);
+        FileSystemController fsController = new FileSystemController();
         ScanWebSocketHandler wsHandler = new ScanWebSocketHandler(scanService, authManager);
 
         // REST API routes
@@ -84,13 +86,21 @@ public class GravedigServer implements Closeable {
         app.get("/api/auth/validate", ctx -> ctx.json(Map.of("authenticated", true)));
         app.post("/api/scans", scanController::startScan);
         app.get("/api/scans", scanController::listScans);
+        app.delete("/api/scans", scanController::clearAllScans);
         app.get("/api/scans/{id}", scanController::getScan);
+        app.delete("/api/scans/{id}", scanController::deleteScan);
         app.get("/api/scans/{id}/findings", scanController::getFindings);
         app.patch("/api/findings/{id}", scanController::patchFinding);
+        app.get("/api/findings/{id}/reveal", scanController::revealFinding);
+        app.post("/api/findings/{id}/reveal", scanController::revealFinding);
         app.get("/api/scans/{id}/export", scanController::exportScan);
+        app.post("/api/scans/{id}/export-save", scanController::saveExport);
 
         app.get("/api/rules", ruleController::listRules);
         app.post("/api/rules/test", ruleController::testRule);
+
+        app.post("/api/fs/choose-folder", fsController::chooseFolder);
+        app.post("/api/fs/open-file", fsController::openFile);
 
         // WebSocket route
         app.ws("/ws/scan/{id}", wsHandler::configure);

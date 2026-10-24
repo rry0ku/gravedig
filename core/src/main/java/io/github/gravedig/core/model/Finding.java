@@ -1,5 +1,6 @@
 package io.github.gravedig.core.model;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -17,7 +18,9 @@ public class Finding {
     private final String filePath;
     private final int lineNumber;
     private final int columnNumber;
+    private final String secretRaw;
     private final String secretRedacted;
+    private final String lineContent;
     private final String snippetRedacted;
     private final String fingerprint;
     private final double entropy;
@@ -46,8 +49,10 @@ public class Finding {
             @JsonProperty("filePath") String filePath,
             @JsonProperty("lineNumber") int lineNumber,
             @JsonProperty("columnNumber") int columnNumber,
-            @JsonProperty("secretRedacted") String secretRedacted,
-            @JsonProperty("snippetRedacted") String snippetRedacted,
+            @JsonProperty("secretRaw") String secretRaw,
+            @JsonProperty("secretRedacted") @JsonAlias("secretMasked") String secretRedacted,
+            @JsonProperty("lineContent") String lineContent,
+            @JsonProperty("snippetRedacted") @JsonAlias({"snippet"}) String snippetRedacted,
             @JsonProperty("fingerprint") String fingerprint,
             @JsonProperty("entropy") double entropy,
             @JsonProperty("validationReason") String validationReason,
@@ -72,8 +77,10 @@ public class Finding {
         this.filePath = Objects.requireNonNull(filePath, "filePath must not be null");
         this.lineNumber = lineNumber;
         this.columnNumber = columnNumber;
-        this.secretRedacted = Objects.requireNonNull(secretRedacted, "secretRedacted must not be null");
-        this.snippetRedacted = snippetRedacted != null ? snippetRedacted : "";
+        this.secretRedacted = Objects.requireNonNull(secretRedacted != null ? secretRedacted : secretRaw, "secretRedacted must not be null");
+        this.secretRaw = secretRaw;
+        this.snippetRedacted = snippetRedacted != null ? snippetRedacted : (lineContent != null ? lineContent : "");
+        this.lineContent = lineContent;
         this.fingerprint = fingerprint != null ? fingerprint : "";
         this.entropy = entropy;
         this.validationReason = validationReason != null ? validationReason : "";
@@ -93,6 +100,40 @@ public class Finding {
         this.detectedAt = detectedAt != null ? detectedAt : Instant.now();
     }
 
+    public Finding(
+            String id,
+            String ruleId,
+            String ruleName,
+            Severity severity,
+            String filePath,
+            int lineNumber,
+            int columnNumber,
+            String secretRedacted,
+            String snippetRedacted,
+            String fingerprint,
+            double entropy,
+            String validationReason,
+            int riskScore,
+            int occurrences,
+            List<Occurrence> occurrencesList,
+            ExposureWindow exposureWindow,
+            RiskBreakdown riskBreakdown,
+            FindingPresence presence,
+            FindingStatus status,
+            String commitHash,
+            String commitAuthor,
+            Instant commitDate,
+            String branch,
+            String description,
+            String remediation,
+            Instant detectedAt) {
+        this(id, ruleId, ruleName, severity, filePath, lineNumber, columnNumber,
+                null, secretRedacted, null, snippetRedacted, fingerprint, entropy,
+                validationReason, riskScore, occurrences, occurrencesList, exposureWindow,
+                riskBreakdown, presence, status, commitHash, commitAuthor, commitDate,
+                branch, description, remediation, detectedAt);
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -104,8 +145,21 @@ public class Finding {
     public String getFilePath() { return filePath; }
     public int getLineNumber() { return lineNumber; }
     public int getColumnNumber() { return columnNumber; }
+
+    @JsonProperty("secretRedacted")
     public String getSecretRedacted() { return secretRedacted; }
+
+    @JsonProperty("secretRaw")
+    public String getSecretRaw() { return secretRaw; }
+
+    @JsonProperty("secretMasked")
+    public String getSecretMasked() { return secretRedacted; }
+
+    @JsonProperty("snippetRedacted")
     public String getSnippetRedacted() { return snippetRedacted; }
+
+    @JsonProperty("lineContent")
+    public String getLineContent() { return lineContent; }
     public String getFingerprint() { return fingerprint; }
     public double getEntropy() { return entropy; }
     public String getValidationReason() { return validationReason; }
@@ -134,7 +188,9 @@ public class Finding {
         private String filePath = "";
         private int lineNumber = 1;
         private int columnNumber = 1;
+        private String secretRaw;
         private String secretRedacted = "******";
+        private String lineContent;
         private String snippetRedacted = "";
         private String fingerprint;
         private double entropy = 0.0;
@@ -161,7 +217,9 @@ public class Finding {
         public Builder filePath(String filePath) { this.filePath = filePath; return this; }
         public Builder lineNumber(int lineNumber) { this.lineNumber = lineNumber; return this; }
         public Builder columnNumber(int columnNumber) { this.columnNumber = columnNumber; return this; }
+        public Builder secretRaw(String secretRaw) { this.secretRaw = secretRaw; return this; }
         public Builder secretRedacted(String secretRedacted) { this.secretRedacted = secretRedacted; return this; }
+        public Builder lineContent(String lineContent) { this.lineContent = lineContent; return this; }
         public Builder snippetRedacted(String snippetRedacted) { this.snippetRedacted = snippetRedacted; return this; }
         public Builder fingerprint(String fingerprint) { this.fingerprint = fingerprint; return this; }
         public Builder entropy(double entropy) { this.entropy = entropy; return this; }
@@ -183,9 +241,10 @@ public class Finding {
 
         public Finding build() {
             return new Finding(id, ruleId, ruleName, severity, filePath, lineNumber, columnNumber,
-                    secretRedacted, snippetRedacted, fingerprint, entropy, validationReason, riskScore,
-                    occurrences, occurrencesList, exposureWindow, riskBreakdown, presence, status,
-                    commitHash, commitAuthor, commitDate, branch, description, remediation, detectedAt);
+                    secretRaw, secretRedacted, lineContent, snippetRedacted, fingerprint, entropy,
+                    validationReason, riskScore, occurrences, occurrencesList, exposureWindow,
+                    riskBreakdown, presence, status, commitHash, commitAuthor, commitDate, branch,
+                    description, remediation, detectedAt);
         }
     }
 }

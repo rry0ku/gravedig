@@ -168,3 +168,268 @@ rules:
     severity: MEDIUM
     description: Identified a potential hardcoded password or credential assignment.
     remediation: Remove hardcoded credential and replace with environment variable or secret manager lookup.
+
+  - id: openai-api-key
+    name: OpenAI API Key
+    regex: '\b(?:sk-[a-zA-Z0-9]{48}|sk-proj-[a-zA-Z0-9_\-]{48,128}|sk-admin-[a-zA-Z0-9_\-]{48,128})\b'
+    keywords:
+      - sk-
+      - sk-proj-
+      - sk-admin-
+    entropyThreshold: 0.0
+    severity: CRITICAL
+    description: Identified an OpenAI API key or project service account key.
+    remediation: Revoke the key immediately in the OpenAI Platform Dashboard under API Keys.
+
+  - id: anthropic-api-key
+    name: Anthropic Claude API Key
+    regex: '\bsk-ant-api03-[a-zA-Z0-9_\-]{90,110}\b'
+    keywords:
+      - sk-ant-api03-
+    entropyThreshold: 0.0
+    severity: CRITICAL
+    description: Identified an Anthropic Claude API key.
+    remediation: Revoke the key in the Anthropic Console under API Keys.
+
+  - id: google-api-key
+    name: Google API Key / Gemini Key
+    regex: '\bAIza[0-9A-Za-z\-_]{35}\b'
+    keywords:
+      - AIza
+    entropyThreshold: 0.0
+    severity: HIGH
+    description: Identified a Google Cloud / Google AI / Gemini API key.
+    remediation: Revoke the key in Google Cloud Console -> APIs & Services -> Credentials.
+
+  - id: huggingface-token
+    name: Hugging Face Access Token
+    regex: '\bhf_[a-zA-Z0-9]{34,37}\b'
+    keywords:
+      - hf_
+    entropyThreshold: 0.0
+    severity: HIGH
+    description: Identified a Hugging Face user access or fine-tuning token.
+    remediation: Revoke the token in Hugging Face Settings -> Access Tokens.
+
+  - id: cohere-api-key
+    name: Cohere API Key
+    regex: '(?i)(?:cohere_api_key|cohere_key|cohere_secret)\s*[:=]\s*["'']?([a-zA-Z0-9]{40})["'']?'
+    keywords:
+      - cohere_api_key
+      - cohere_key
+    entropyThreshold: 0.0
+    severity: HIGH
+    description: Identified a Cohere LLM API key.
+    remediation: Invalidate and regenerate key in Cohere Dashboard.
+
+  - id: discord-bot-token
+    name: Discord Bot Token
+    regex: '\b[MN][A-Za-z\d]{23,26}\.[A-Za-z\d\-_]{6}\.[A-Za-z\d\-_]{27,38}\b'
+    keywords: []
+    entropyThreshold: 0.0
+    severity: CRITICAL
+    description: Identified a Discord Bot Token allowing bot control and message access.
+    remediation: Reset the bot token immediately in the Discord Developer Portal.
+
+  - id: discord-webhook
+    name: Discord Webhook URL
+    regex: 'https:\/\/discord(?:app)?\.com\/api\/webhooks\/[0-9]{17,20}\/[A-Za-z0-9_\-]{60,68}'
+    keywords:
+      - discord.com/api/webhooks
+      - discordapp.com/api/webhooks
+    entropyThreshold: 0.0
+    severity: HIGH
+    description: Identified a Discord Webhook endpoint URL.
+    remediation: Delete and regenerate the webhook in Discord Server Settings -> Integrations.
+
+  - id: telegram-bot-token
+    name: Telegram Bot Token
+    regex: '\b[0-9]{8,10}:[a-zA-Z0-9_\-]{35}\b'
+    keywords: []
+    entropyThreshold: 0.0
+    severity: HIGH
+    description: Identified a Telegram Bot API authorization token.
+    remediation: Revoke and regenerate the token via @BotFather in Telegram.
+
+  - id: github-oauth-token
+    name: GitHub OAuth Access Token
+    regex: '\b(?:gho_[a-zA-Z0-9]{36}|ghu_[a-zA-Z0-9]{36}|ghs_[a-zA-Z0-9]{36}|ghr_[a-zA-Z0-9]{36})\b'
+    keywords:
+      - gho_
+      - ghu_
+      - ghs_
+      - ghr_
+    entropyThreshold: 0.0
+    severity: CRITICAL
+    description: Identified a GitHub OAuth app token, user-to-server token, or server-to-server token.
+    remediation: Invalidate token via GitHub Developer Settings.
+
+  - id: azure-storage-account-key
+    name: Azure Storage Account Key
+    regex: '(?i)(?:AccountKey|DefaultEndpointsProtocol=[^;]+;AccountName=[^;]+;AccountKey)=([a-zA-Z0-9+/=]{86,90})'
+    keywords:
+      - AccountKey=
+    entropyThreshold: 0.0
+    severity: CRITICAL
+    description: Identified an Azure Storage Account connection key.
+    remediation: Regenerate key1/key2 in the Azure Portal under Storage Accounts -> Access keys.
+
+  - id: gcp-service-account-json
+    name: GCP Service Account Private Key
+    regex: '"type":\s*"service_account",\s*"project_id":'
+    keywords:
+      - service_account
+      - project_id
+    entropyThreshold: 0.0
+    severity: CRITICAL
+    description: Identified an exported Google Cloud Service Account credentials JSON file.
+    remediation: Delete the compromised service account key in Google Cloud Console IAM -> Service Accounts.
+
+  - id: square-access-token
+    name: Square Access Token
+    regex: '\b(?:sq0atp-[0-9A-Za-z\-_]{22}|EAAA[a-zA-Z0-9_\-]{60})\b'
+    keywords:
+      - sq0atp-
+      - EAAA
+    entropyThreshold: 0.0
+    severity: CRITICAL
+    description: Identified a Square Production Access Token.
+    remediation: Revoke token in Square Developer Dashboard -> Credentials.
+
+  - id: shopify-access-token
+    name: Shopify Admin API Token
+    regex: '\b(?:shpat_[a-fA-F0-9]{32}|shpca_[a-fA-F0-9]{32}|shppa_[a-fA-F0-9]{32})\b'
+    keywords:
+      - shpat_
+      - shpca_
+      - shppa_
+    entropyThreshold: 0.0
+    severity: CRITICAL
+    description: Identified a Shopify Admin or Custom App API access token.
+    remediation: Revoke app credentials in Shopify Partner Dashboard / Admin Apps.
+
+  - id: postman-api-key
+    name: Postman API Key
+    regex: '\bPMAK-[a-f0-9]{24}-[a-f0-9]{34}\b'
+    keywords:
+      - PMAK-
+    entropyThreshold: 0.0
+    severity: HIGH
+    description: Identified a Postman Personal Access Key.
+    remediation: Revoke the API key in Postman Settings -> API Keys.
+
+  - id: datadog-api-key
+    name: Datadog API / App Key
+    regex: '(?i)(?:datadog_api_key|datadog_app_key|dd_api_key|dd_app_key)\s*[:=]\s*["'']?([a-f0-9]{32,40})["'']?'
+    keywords:
+      - datadog_api_key
+      - datadog_app_key
+      - dd_api_key
+    entropyThreshold: 0.0
+    severity: HIGH
+    description: Identified a Datadog API or Application Key.
+    remediation: Revoke the key in Datadog Organization Settings -> API Keys.
+
+  - id: sentry-auth-token
+    name: Sentry Auth Token
+    regex: '\bsntrys_[a-zA-Z0-9]{64}\b'
+    keywords:
+      - sntrys_
+    entropyThreshold: 0.0
+    severity: HIGH
+    description: Identified a Sentry User or Internal Integration Auth Token.
+    remediation: Revoke the token in Sentry Settings -> Developer Settings / Auth Tokens.
+
+  - id: cloudflare-api-token
+    name: Cloudflare API Token
+    regex: '(?i)(?:cloudflare_api_token|cloudflare_token|cf_api_key|cf_token)\s*[:=]\s*["'']?([a-zA-Z0-9_\-]{40})["'']?'
+    keywords:
+      - cloudflare_api_token
+      - cf_api_key
+      - cloudflare_token
+    entropyThreshold: 0.0
+    severity: CRITICAL
+    description: Identified a Cloudflare Global API Key or scoped API Token.
+    remediation: Roll API Token in Cloudflare Dashboard -> My Profile -> API Tokens.
+
+  - id: hashicorp-vault-token
+    name: HashiCorp Vault Token
+    regex: '\b(?:hvs\.[a-zA-Z0-9_\-]{90,105}|s\.[a-zA-Z0-9]{24,32})\b'
+    keywords:
+      - hvs.
+      - s.
+    entropyThreshold: 0.0
+    severity: CRITICAL
+    description: Identified a HashiCorp Vault root or service token.
+    remediation: Revoke the token using `vault token revoke <token>`.
+
+  - id: mailgun-api-key
+    name: Mailgun Private API Key
+    regex: '\bkey-[0-9a-zA-Z]{32}\b'
+    keywords:
+      - key-
+    entropyThreshold: 0.0
+    severity: HIGH
+    description: Identified a Mailgun Private API Key.
+    remediation: Rotate the API key in Mailgun Dashboard -> Settings -> API Keys.
+
+  - id: linear-api-key
+    name: Linear API Key
+    regex: '\blin_api_[a-zA-Z0-9]{40}\b'
+    keywords:
+      - lin_api_
+    entropyThreshold: 0.0
+    severity: HIGH
+    description: Identified a Linear Personal API Key.
+    remediation: Revoke key in Linear Account Settings -> Security & API.
+
+  - id: supabase-service-role-key
+    name: Supabase Service Role Key
+    regex: '\beyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJpc3MiOiJzdXBhYmFzZSIs(?:[a-zA-Z0-9_\-\.]*)\b'
+    keywords:
+      - eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
+    entropyThreshold: 0.0
+    severity: CRITICAL
+    description: Identified a Supabase Service Role Key (bypasses Row Level Security).
+    remediation: Invalidate and regenerate project API keys in Supabase Settings -> API.
+
+  - id: resend-api-key
+    name: Resend API Key
+    regex: '\bre_[a-zA-Z0-9]{24,32}\b'
+    keywords:
+      - re_
+    entropyThreshold: 0.0
+    severity: HIGH
+    description: Identified a Resend transactional email API key.
+    remediation: Revoke key in Resend Dashboard -> API Keys.
+
+  - id: terraform-cloud-token
+    name: Terraform Cloud / Atlas API Token
+    regex: '\b[a-zA-Z0-9]{14}\.atlasv1\.[a-zA-Z0-9_\-]{60,70}\b'
+    keywords:
+      - .atlasv1.
+    entropyThreshold: 0.0
+    severity: CRITICAL
+    description: Identified a HashiCorp Terraform Cloud / Enterprise User Token.
+    remediation: Revoke token in Terraform Cloud User Settings -> Tokens.
+
+  - id: digitalocean-pat
+    name: DigitalOcean Personal Access Token
+    regex: '\bdop_v1_[a-f0-9]{64}\b'
+    keywords:
+      - dop_v1_
+    entropyThreshold: 0.0
+    severity: CRITICAL
+    description: Identified a DigitalOcean Personal Access Token.
+    remediation: Delete the token in DigitalOcean Control Panel -> API -> Tokens/Keys.
+
+  - id: grafana-service-account-token
+    name: Grafana Service Account Token
+    regex: '\bglsa_[A-Za-z0-9]{32}_[A-Za-z0-9]{8}\b'
+    keywords:
+      - glsa_
+    entropyThreshold: 0.0
+    severity: HIGH
+    description: Identified a Grafana Service Account Token.
+    remediation: Delete the service account token in Grafana Administration -> Service Accounts.
+

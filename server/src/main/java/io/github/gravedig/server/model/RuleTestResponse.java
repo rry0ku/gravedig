@@ -48,7 +48,13 @@ public class RuleTestResponse {
     }
 
     private boolean matched;
+    private int matchCount;
     private String error;
+    private String ruleId;
+    private String ruleName;
+    private String severity;
+    private Double entropy;
+    private String maskedSnippet;
     private List<MatchDetail> matches = new ArrayList<>();
 
     public RuleTestResponse() {
@@ -57,6 +63,7 @@ public class RuleTestResponse {
     public static RuleTestResponse success(List<MatchDetail> matches) {
         RuleTestResponse resp = new RuleTestResponse();
         resp.matched = matches != null && !matches.isEmpty();
+        resp.matchCount = matches != null ? matches.size() : 0;
         resp.matches = matches != null ? matches : new ArrayList<>();
         return resp;
     }
@@ -64,6 +71,7 @@ public class RuleTestResponse {
     public static RuleTestResponse error(String error) {
         RuleTestResponse resp = new RuleTestResponse();
         resp.matched = false;
+        resp.matchCount = 0;
         resp.error = error;
         return resp;
     }
@@ -76,12 +84,60 @@ public class RuleTestResponse {
         this.matched = matched;
     }
 
+    public int getMatchCount() {
+        return matchCount;
+    }
+
+    public void setMatchCount(int matchCount) {
+        this.matchCount = matchCount;
+    }
+
     public String getError() {
         return error;
     }
 
     public void setError(String error) {
         this.error = error;
+    }
+
+    public String getRuleId() {
+        return ruleId;
+    }
+
+    public void setRuleId(String ruleId) {
+        this.ruleId = ruleId;
+    }
+
+    public String getRuleName() {
+        return ruleName;
+    }
+
+    public void setRuleName(String ruleName) {
+        this.ruleName = ruleName;
+    }
+
+    public String getSeverity() {
+        return severity;
+    }
+
+    public void setSeverity(String severity) {
+        this.severity = severity;
+    }
+
+    public Double getEntropy() {
+        return entropy;
+    }
+
+    public void setEntropy(Double entropy) {
+        this.entropy = entropy;
+    }
+
+    public String getMaskedSnippet() {
+        return maskedSnippet;
+    }
+
+    public void setMaskedSnippet(String maskedSnippet) {
+        this.maskedSnippet = maskedSnippet;
     }
 
     public List<MatchDetail> getMatches() {

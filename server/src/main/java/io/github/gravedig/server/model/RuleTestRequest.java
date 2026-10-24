@@ -1,8 +1,13 @@
 package io.github.gravedig.server.model;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class RuleTestRequest {
     private String pattern;
     private String ruleId;
+    @JsonAlias({"snippet", "text", "content"})
     private String sample;
 
     public RuleTestRequest() {

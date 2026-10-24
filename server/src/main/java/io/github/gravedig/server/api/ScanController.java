@@ -94,6 +94,16 @@ public class ScanController {
         }
     }
 
+    public void revealFinding(Context ctx) {
+        String id = ctx.pathParam("id");
+        Optional<Map<String, String>> result = scanService.revealFinding(id);
+        if (result.isPresent()) {
+            ctx.json(result.get());
+        } else {
+            ctx.status(HttpStatus.NOT_FOUND).json(Map.of("error", "Finding not found: " + id));
+        }
+    }
+
     public void exportScan(Context ctx) {
         String scanId = ctx.pathParam("id");
         String format = ctx.queryParam("format");
@@ -111,10 +121,11 @@ public class ScanController {
         switch (format) {
             case "sarif":
                 ctx.contentType("application/sarif+json");
-                ctx.header("Content-Disposition", "attachment; filename=\"scan-" + scanId + ".sarif\"");
+                ctx.header("Content-Disposition", "attachment; filename=\"scan-" + scanId + ".sarif.json\"");
                 break;
             case "html":
                 ctx.contentType("text/html; charset=utf-8");
+                ctx.header("Content-Disposition", "attachment; filename=\"scan-" + scanId + ".html\"");
                 break;
             case "csv":
                 ctx.contentType("text/csv; charset=utf-8");
@@ -123,9 +134,58 @@ public class ScanController {
             case "json":
             default:
                 ctx.contentType("application/json; charset=utf-8");
+                ctx.header("Content-Disposition", "attachment; filename=\"scan-" + scanId + ".json\"");
                 break;
         }
 
         ctx.result(content.get());
+    }
+
+    public void saveExport(Context ctx) {
+        String scanId = ctx.pathParam("id");
+        String format = ctx.queryParam("format");
+        String destinationDir = null;
+        try {
+            if (ctx.body() != null && !ctx.body().isBlank()) {
+                JsonNode node = mapper.readTree(ctx.body());
+                if (node.has("format") && (format == null || format.isBlank())) {
+                    format = node.get("format").asText(null);
+                }
+                if (node.has("destinationDir")) {
+                    destinationDir = node.get("destinationDir").asText(null);
+                }
+            }
+        } catch (Exception ignored) {}
+
+        if (format == null || format.isBlank()) {
+            format = "json";
+        }
+        format = format.toLowerCase().trim();
+
+        try {
+            Optional<Map<String, Object>> result = scanService.saveExportToFile(scanId, format, destinationDir);
+            if (result.isEmpty()) {
+                ctx.status(HttpStatus.NOT_FOUND).json(Map.of("error", "Scan not found: " + scanId));
+                return;
+            }
+            ctx.json(result.get());
+        } catch (Exception e) {
+            ctx.status(HttpStatus.INTERNAL_SERVER_ERROR).json(Map.of("error", "Failed to save export: " + e.getMessage()));
+        }
+    }
+
+    public void deleteScan(Context ctx) {
+        String scanId = ctx.pathParam("id");
+        boolean deleted = scanService.deleteScan(scanId);
+        if (deleted) {
+            ctx.json(Map.of("success", true, "message", "Scan and associated findings cleared"));
+        } else {
+            ctx.status(HttpStatus.NOT_FOUND).json(Map.of("error", "Scan not found: " + scanId));
+        }
+    }
+
+    public void clearAllScans(Context ctx) {
+        scanService.clearAllScans();
+        ctx.json(Map.of("success", true, "message", "All scans and findings cleared from dashboard"));
     }
 }

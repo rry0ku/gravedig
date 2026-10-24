@@ -33,8 +33,8 @@
       cy="60"
       r={radius}
       fill="none"
-      stroke="var(--bg-subtle)"
-      stroke-width="9"
+      stroke="var(--border-subtle)"
+      stroke-width="5"
       stroke-linecap="round"
       stroke-dasharray="{arcLength} {circumference}"
       transform="rotate(140 60 60)"
@@ -46,7 +46,7 @@
       r={radius}
       fill="none"
       stroke={color}
-      stroke-width="9"
+      stroke-width="5"
       stroke-linecap="round"
       stroke-dasharray="{arcLength} {circumference}"
       stroke-dashoffset={strokeDashoffset}
@@ -54,13 +54,13 @@
       class="score-ring"
     />
     <!-- Text center -->
-    <text x="60" y="56" text-anchor="middle" class="score-number" fill={color}>
+    <text x="60" y="55" text-anchor="middle" class="score-number" fill={color}>
       {clampedScore}
     </text>
-    <text x="60" y="72" text-anchor="middle" class="score-sub" fill="var(--text-dim)">
+    <text x="60" y="71" text-anchor="middle" class="score-sub" fill="var(--text-dim)">
       / 100
     </text>
-    <text x="60" y="88" text-anchor="middle" class="score-label" fill={color}>
+    <text x="60" y="87" text-anchor="middle" class="score-label" fill={color}>
       {label}
     </text>
   </svg>
@@ -79,22 +79,22 @@
   }
   .score-ring {
     transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s ease;
-    filter: drop-shadow(0 0 6px currentColor);
   }
   .score-number {
-    font-size: 26px;
-    font-weight: 800;
+    font-size: 24px;
+    font-weight: 700;
     font-family: var(--font-mono);
   }
   .score-sub {
-    font-size: 10px;
+    font-size: 9px;
     font-family: var(--font-mono);
     text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
   .score-label {
-    font-size: 8.5px;
+    font-size: 8px;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
     font-family: var(--font-mono);
   }
 </style>

@@ -368,7 +368,7 @@ public class GitHistoryScanner {
 
                 findings.add(new RawGitFinding(
                         rule, filePath, lineNumber, matcher.start() + 1,
-                        rawSecret, redactedSecret, snippet, fingerprint, entropy,
+                        rawSecret, redactedSecret, line.trim(), snippet, fingerprint, entropy,
                         validation, commit
                 ));
             }
@@ -381,7 +381,7 @@ public class GitHistoryScanner {
                 findings.add(new RawGitFinding(
                         new Rule(ef.getRuleId(), ef.getRuleName(), ".*", List.of(), 4.0, ef.getSeverity(), ef.getDescription(), ef.getRemediation()),
                         filePath, lineNumber, ef.getColumnNumber(),
-                        "", ef.getSecretRedacted(), ef.getSnippetRedacted(),
+                        ef.getSecretRaw(), ef.getSecretRedacted(), ef.getLineContent(), ef.getSnippetRedacted(),
                         ef.getFingerprint(), ef.getEntropy(),
                         ValidationResult.valid("Entropy token", 0.7),
                         commit
@@ -484,7 +484,9 @@ public class GitHistoryScanner {
                     .filePath(earliest.filePath)
                     .lineNumber(earliest.lineNumber)
                     .columnNumber(earliest.columnNumber)
+                    .secretRaw(earliest.rawSecret)
                     .secretRedacted(earliest.secretRedacted)
+                    .lineContent(earliest.lineContent)
                     .snippetRedacted(earliest.snippetRedacted)
                     .fingerprint(fingerprint)
                     .entropy(earliest.entropy)
@@ -564,6 +566,7 @@ public class GitHistoryScanner {
         final int columnNumber;
         final String rawSecret;
         final String secretRedacted;
+        final String lineContent;
         final String snippetRedacted;
         final String fingerprint;
         final double entropy;
@@ -571,7 +574,7 @@ public class GitHistoryScanner {
         final RevCommit commit;
 
         RawGitFinding(Rule rule, String filePath, int lineNumber, int columnNumber,
-                      String rawSecret, String secretRedacted, String snippetRedacted,
+                      String rawSecret, String secretRedacted, String lineContent, String snippetRedacted,
                       String fingerprint, double entropy, ValidationResult validation,
                       RevCommit commit) {
             this.rule = rule;
@@ -580,6 +583,7 @@ public class GitHistoryScanner {
             this.columnNumber = columnNumber;
             this.rawSecret = rawSecret;
             this.secretRedacted = secretRedacted;
+            this.lineContent = lineContent;
             this.snippetRedacted = snippetRedacted;
             this.fingerprint = fingerprint;
             this.entropy = entropy;

@@ -18,6 +18,8 @@ public class ScanEvent {
     private Integer filesScanned;
     private Integer commitsScanned;
     private Integer findingsCount;
+    private Integer riskScore;
+    private String currentFile;
     private Finding finding;
     private ScanSummary summary;
     private String error;
@@ -36,19 +38,29 @@ public class ScanEvent {
     }
 
     public static ScanEvent finding(String scanId, Finding finding, int currentTotal) {
+        return finding(scanId, finding, currentTotal, finding != null ? finding.getRiskScore() : 0);
+    }
+
+    public static ScanEvent finding(String scanId, Finding finding, int currentTotal, int riskScore) {
         ScanEvent e = new ScanEvent();
         e.type = Type.FINDING;
         e.scanId = scanId;
         e.finding = finding;
         e.findingsCount = currentTotal;
+        e.riskScore = riskScore;
         return e;
     }
 
     public static ScanEvent completed(String scanId, ScanSummary summary) {
+        return completed(scanId, summary, 0);
+    }
+
+    public static ScanEvent completed(String scanId, ScanSummary summary, int riskScore) {
         ScanEvent e = new ScanEvent();
         e.type = Type.COMPLETED;
         e.scanId = scanId;
         e.summary = summary;
+        e.riskScore = riskScore;
         if (summary != null) {
             e.filesScanned = (int) summary.getFilesScanned();
             e.commitsScanned = (int) summary.getCommitsScanned();
@@ -103,6 +115,30 @@ public class ScanEvent {
 
     public void setFindingsCount(Integer findingsCount) {
         this.findingsCount = findingsCount;
+    }
+
+    public Integer getFindingsFound() {
+        return findingsCount;
+    }
+
+    public void setFindingsFound(Integer findingsFound) {
+        this.findingsCount = findingsFound;
+    }
+
+    public Integer getRiskScore() {
+        return riskScore;
+    }
+
+    public void setRiskScore(Integer riskScore) {
+        this.riskScore = riskScore;
+    }
+
+    public String getCurrentFile() {
+        return currentFile;
+    }
+
+    public void setCurrentFile(String currentFile) {
+        this.currentFile = currentFile;
     }
 
     public Finding getFinding() {

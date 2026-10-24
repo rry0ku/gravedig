@@ -1,6 +1,11 @@
 package io.github.gravedig.server.model;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ScanRequest {
+    @JsonAlias({"targetPath", "path"})
     private String path;
     private boolean includeHistory = true;
     private boolean offlineValidation = true;

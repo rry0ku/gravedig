@@ -119,4 +119,75 @@ class ScanDaoAndFindingDaoTest {
         assertThat(updatedFinding).isPresent();
         assertThat(updatedFinding.get().getStatus()).isEqualTo(FindingStatus.FALSE_POSITIVE);
     }
+
+    @Test
+    @DisplayName("Finding preserves raw secrets, masked secrets, and line snippets")
+    void testFindingSecretFields() throws Exception {
+        Finding finding = Finding.builder()
+                .id("f-reveal-test")
+                .ruleId("aws-key")
+                .ruleName("AWS Key")
+                .severity(Severity.CRITICAL)
+                .filePath("src/main.py")
+                .lineNumber(10)
+                .columnNumber(5)
+                .secretRaw("AKIAIOSFODNN7EXAMPLE")
+                .secretRedacted("AKIA****************")
+                .lineContent("aws_key = \"AKIAIOSFODNN7EXAMPLE\"")
+                .snippetRedacted("aws_key = \"AKIA****************\"")
+                .build();
+
+        assertThat(finding.getSecretRaw()).isEqualTo("AKIAIOSFODNN7EXAMPLE");
+        assertThat(finding.getSecretRedacted()).isEqualTo("AKIA****************");
+        assertThat(finding.getSecretMasked()).isEqualTo("AKIA****************");
+        assertThat(finding.getLineContent()).isEqualTo("aws_key = \"AKIAIOSFODNN7EXAMPLE\"");
+        assertThat(finding.getSnippetRedacted()).isEqualTo("aws_key = \"AKIA****************\"");
+
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper()
+                .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+        String json = mapper.writeValueAsString(finding);
+
+        assertThat(json).contains("\"secretRaw\":\"AKIAIOSFODNN7EXAMPLE\"");
+        assertThat(json).contains("\"secretMasked\":\"AKIA****************\"");
+        assertThat(json).contains("\"secretRedacted\":\"AKIA****************\"");
+        assertThat(json).contains("\"lineContent\":\"aws_key = \\\"AKIAIOSFODNN7EXAMPLE\\\"\"");
+        assertThat(json).contains("\"snippetRedacted\":\"aws_key = \\\"AKIA****************\\\"\"");
+
+        Finding deserialized = mapper.readValue(json, Finding.class);
+        assertThat(deserialized.getSecretRaw()).isEqualTo("AKIAIOSFODNN7EXAMPLE");
+        assertThat(deserialized.getSecretMasked()).isEqualTo("AKIA****************");
+        assertThat(deserialized.getLineContent()).isEqualTo("aws_key = \"AKIAIOSFODNN7EXAMPLE\"");
+    }
+
+    @Test
+    @DisplayName("ScanService reveals real secret without asterisks from source file")
+    void testRevealFindingFromSource(@org.junit.jupiter.api.io.TempDir java.nio.file.Path tempDir) throws Exception {
+        java.nio.file.Path credsFile = tempDir.resolve("credentials.txt");
+        java.nio.file.Files.writeString(credsFile, "aws_access_key_id = AKIAIOSFODNN7EXAMPLE\n");
+
+        String scanId = "scan-reveal-source";
+        ScanRecord record = new ScanRecord(scanId, tempDir.toString(), "WORKTREE", "COMPLETED", Instant.now().toString());
+        scanDao.insert(record);
+
+        Finding maskedFinding = Finding.builder()
+                .id("f-masked-legacy")
+                .ruleId("aws-access-key-id")
+                .ruleName("AWS Access Key ID")
+                .severity(Severity.CRITICAL)
+                .filePath("credentials.txt")
+                .lineNumber(1)
+                .columnNumber(21)
+                .secretRedacted("AKIA****************")
+                .snippetRedacted("aws_access_key_id = AKIA****************")
+                .build();
+
+        findingDao.insertBatch(scanId, List.of(maskedFinding));
+
+        io.github.gravedig.server.service.ScanService scanService = new io.github.gravedig.server.service.ScanService(scanDao, findingDao);
+        Optional<Map<String, String>> revealed = scanService.revealFinding("f-masked-legacy");
+
+        assertThat(revealed).isPresent();
+        assertThat(revealed.get().get("secretRaw")).isEqualTo("AKIAIOSFODNN7EXAMPLE");
+        assertThat(revealed.get().get("lineContent")).isEqualTo("aws_access_key_id = AKIAIOSFODNN7EXAMPLE");
+    }
 }

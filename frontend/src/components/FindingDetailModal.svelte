@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { patchFinding } from '../api';
+  import { patchFinding, revealFinding } from '../api';
   import type { Finding, FindingStatus } from '../types';
 
   export let finding: Finding;
@@ -11,9 +11,38 @@
   }>();
 
   let revealSecret = false;
-  let copied = false;
+  let revealing = false;
+  let copiedSecret = false;
+  let copiedSnippet = false;
   let triageComment = finding.triageComment || '';
   let saving = false;
+
+  async function handleToggleReveal() {
+    if (!revealSecret) {
+      const needsFetch = !finding.secretRaw || 
+                         finding.secretRaw.includes('*') || 
+                         !finding.lineContent || 
+                         finding.lineContent.includes('***');
+      if (needsFetch) {
+        revealing = true;
+        try {
+          const res = await revealFinding(finding.id);
+          if (res && res.secretRaw) {
+            finding.secretRaw = res.secretRaw;
+            finding.lineContent = res.lineContent;
+            finding = { ...finding };
+          }
+        } catch (err: any) {
+          console.error('Failed to reveal real secret:', err);
+        } finally {
+          revealing = false;
+        }
+      }
+      revealSecret = true;
+    } else {
+      revealSecret = false;
+    }
+  }
 
   async function updateStatus(newStatus: FindingStatus) {
     saving = true;
@@ -27,11 +56,18 @@
     }
   }
 
-  function copyToClipboard(text?: string) {
+  function copySecret(text?: string) {
     if (!text) return;
     navigator.clipboard.writeText(text);
-    copied = true;
-    setTimeout(() => copied = false, 2000);
+    copiedSecret = true;
+    setTimeout(() => copiedSecret = false, 2000);
+  }
+
+  function copySnippet(text?: string) {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    copiedSnippet = true;
+    setTimeout(() => copiedSnippet = false, 2000);
   }
 </script>
 
@@ -44,9 +80,17 @@
           <span class="badge badge-{finding.severity.toLowerCase()}">{finding.severity}</span>
           <span class="badge badge-{finding.presence.toLowerCase()}">
             {#if finding.presence === 'ALIVE'}
-              ⚡ ALIVE IN WORKTREE / HEAD
+              <svg class="badge-icon-svg" width="8" height="8" viewBox="0 0 8 8" fill="currentColor">
+                <circle cx="4" cy="4" r="3"/>
+              </svg>
+              ALIVE IN WORKTREE / HEAD
             {:else}
-              ⚰ BURIED IN GIT HISTORY
+              <svg class="badge-icon-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="4"/>
+                <line x1="2" y1="12" x2="8" y2="12"/>
+                <line x1="16" y1="12" x2="22" y2="12"/>
+              </svg>
+              BURIED IN GIT HISTORY
             {/if}
           </span>
           <span class="entropy-tag">Entropy: {finding.entropy.toFixed(2)} bits/char</span>
@@ -56,7 +100,10 @@
       </div>
 
       <button class="close-btn" on:click={() => dispatch('close')} title="Close Drawer">
-        ✕
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
       </button>
     </div>
 
@@ -75,33 +122,82 @@
         </div>
       </section>
 
-      <!-- Code & Secret Snippet -->
+      <!-- Detected Secret -->
       <section class="section">
         <div class="snippet-header">
-          <span class="section-title">Code Snippet & Secret</span>
+          <span class="section-title">Detected Secret</span>
           <div class="snippet-actions">
             <button
               class="toggle-reveal-btn"
-              on:click={() => revealSecret = !revealSecret}
+              on:click={handleToggleReveal}
+              disabled={revealing}
             >
-              {revealSecret ? 'Mask Secret' : 'Reveal Secret'}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                {#if revealSecret}
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                {:else}
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                {/if}
+              </svg>
+              <span>{revealing ? 'Unmasking...' : (revealSecret ? 'Mask Secret' : 'Reveal Secret')}</span>
             </button>
             <button
               class="copy-btn"
-              on:click={() => copyToClipboard(revealSecret ? finding.lineContent : finding.secretMasked)}
+              on:click={() => copySecret(revealSecret ? (finding.secretRaw || finding.lineContent) : (finding.secretMasked || finding.secretRedacted))}
             >
-              {copied ? 'Copied!' : 'Copy'}
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+              <span>{copiedSecret ? 'Copied Secret!' : 'Copy Secret'}</span>
             </button>
           </div>
+        </div>
+
+        <div class="secret-box">
+          {#if revealing}
+            <div class="revealing-status">
+              <span class="spinner-small"></span>
+              <span>Unmasking real credential from source...</span>
+            </div>
+          {:else if revealSecret}
+            <span class="secret-revealed-value">{finding.secretRaw || finding.lineContent || finding.secretMasked || finding.secretRedacted}</span>
+          {:else}
+            <span class="secret-masked-value">{finding.secretMasked || finding.secretRedacted || '***REDACTED***'}</span>
+          {/if}
+        </div>
+      </section>
+
+      <!-- Code Snippet -->
+      <section class="section">
+        <div class="snippet-header">
+          <span class="section-title">Code Snippet (Line {finding.lineNumber})</span>
+          <button
+            class="copy-btn"
+            on:click={() => copySnippet(revealSecret ? (finding.lineContent || finding.snippetRedacted) : (finding.snippetRedacted || finding.lineContent))}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            <span>{copiedSnippet ? 'Copied Snippet!' : 'Copy Snippet'}</span>
+          </button>
         </div>
 
         <div class="code-viewer">
           <div class="line-gutter">{finding.lineNumber}</div>
           <div class="code-line">
-            {#if revealSecret}
-              <span class="secret-revealed">{finding.lineContent || finding.secretMasked}</span>
+            {#if revealing}
+              <div class="revealing-status">
+                <span class="spinner-small"></span>
+                <span>Loading unmasked line...</span>
+              </div>
+            {:else if revealSecret}
+              <span class="snippet-revealed">{finding.lineContent || finding.snippetRedacted || finding.secretRaw || finding.secretMasked || finding.secretRedacted}</span>
             {:else}
-              <span class="secret-masked">{finding.secretMasked || '***REDACTED***'}</span>
+              <span class="snippet-masked">{finding.snippetRedacted || finding.lineContent || finding.secretMasked || finding.secretRedacted || '***REDACTED***'}</span>
             {/if}
           </div>
         </div>
@@ -307,8 +403,72 @@
   }
 
   .toggle-reveal-btn, .copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
     font-size: 0.75rem;
-    padding: 0.25rem 0.6rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+    color: var(--text-main);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .toggle-reveal-btn:hover, .copy-btn:hover {
+    background: var(--bg-card);
+    border-color: var(--border-focus);
+    color: var(--accent-cyan);
+  }
+
+  .secret-box {
+    display: flex;
+    align-items: center;
+    background: var(--bg-main);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    word-break: break-all;
+    min-height: 2.75rem;
+  }
+
+  .revealing-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--accent-cyan);
+    font-size: 0.8rem;
+    font-style: italic;
+  }
+
+  .spinner-small {
+    width: 13px;
+    height: 13px;
+    border: 2px solid var(--border-subtle);
+    border-top-color: var(--accent-cyan);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .secret-masked-value {
+    color: var(--severity-high);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  .secret-revealed-value {
+    color: var(--severity-critical);
+    background: var(--severity-critical-bg);
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
   }
 
   .code-viewer {
@@ -337,17 +497,12 @@
     flex: 1;
   }
 
-  .secret-masked {
-    color: var(--severity-high);
-    font-weight: 700;
+  .snippet-masked {
+    color: var(--text-main);
   }
 
-  .secret-revealed {
-    color: var(--severity-critical);
-    background: var(--severity-critical-bg);
-    padding: 0.1rem 0.35rem;
-    border-radius: var(--radius-sm);
-    font-weight: 700;
+  .snippet-revealed {
+    color: var(--text-main);
   }
 
   .commit-card {

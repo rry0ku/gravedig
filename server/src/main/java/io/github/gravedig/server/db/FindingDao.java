@@ -191,4 +191,86 @@ public class FindingDao {
             throw new RuntimeException("Failed to update status for finding: " + id, e);
         }
     }
+
+    public Optional<String> findScanIdByFindingId(String id) {
+        String sql = "SELECT scan_id FROM findings WHERE id = ?;";
+        try (Connection conn = db.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, id);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.ofNullable(rs.getString("scan_id"));
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to find scan_id for finding: " + id, e);
+        }
+        return Optional.empty();
+    }
+
+    public boolean updateRawSecret(String id, String secretRaw, String lineContent) {
+        Optional<Finding> existingOpt = findById(id);
+        if (existingOpt.isEmpty()) {
+            return false;
+        }
+
+        Finding existing = existingOpt.get();
+        Finding updated = Finding.builder()
+                .id(existing.getId())
+                .ruleId(existing.getRuleId())
+                .ruleName(existing.getRuleName())
+                .severity(existing.getSeverity())
+                .filePath(existing.getFilePath())
+                .lineNumber(existing.getLineNumber())
+                .columnNumber(existing.getColumnNumber())
+                .secretRaw(secretRaw)
+                .secretRedacted(existing.getSecretRedacted())
+                .lineContent(lineContent)
+                .snippetRedacted(existing.getSnippetRedacted())
+                .fingerprint(existing.getFingerprint())
+                .entropy(existing.getEntropy())
+                .validationReason(existing.getValidationReason())
+                .riskScore(existing.getRiskScore())
+                .occurrences(existing.getOccurrences())
+                .occurrencesList(existing.getOccurrencesList())
+                .exposureWindow(existing.getExposureWindow())
+                .riskBreakdown(existing.getRiskBreakdown())
+                .presence(existing.getPresence())
+                .status(existing.getStatus())
+                .commitHash(existing.getCommitHash())
+                .commitAuthor(existing.getCommitAuthor())
+                .commitDate(existing.getCommitDate())
+                .branch(existing.getBranch())
+                .description(existing.getDescription())
+                .remediation(existing.getRemediation())
+                .detectedAt(existing.getDetectedAt())
+                .build();
+
+        String sql = "UPDATE findings SET raw_json = ? WHERE id = ?;";
+        try (Connection conn = db.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, MAPPER.writeValueAsString(updated));
+            stmt.setString(2, id);
+            return stmt.executeUpdate() > 0;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update raw secret for finding: " + id, e);
+        }
+    }
+
+    public void deleteByScanId(String scanId) {
+        String sql = "DELETE FROM findings WHERE scan_id = ?;";
+        try (Connection conn = db.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, scanId);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to delete findings for scan: " + scanId, e);
+        }
+    }
+
+    public void deleteAll() {
+        String sql = "DELETE FROM findings;";
+        try (Connection conn = db.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to delete all findings", e);
+        }
+    }
 }

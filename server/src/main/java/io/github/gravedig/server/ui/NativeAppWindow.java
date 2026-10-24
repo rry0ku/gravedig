@@ -23,10 +23,25 @@ public class NativeAppWindow {
         void gtk_widget_show_all(Pointer widget);
         void gtk_main();
         void gtk_main_quit();
+        Pointer gtk_file_chooser_dialog_new(String title, Pointer parent, int action, String first_button, Object... rest);
+        void gtk_dialog_add_button(Pointer dialog, String text, int responseId);
+        int gtk_dialog_run(Pointer dialog);
+        String gtk_file_chooser_get_filename(Pointer chooser);
+        void gtk_file_chooser_set_current_folder(Pointer chooser, String filename);
+        void gtk_widget_destroy(Pointer widget);
+        void gtk_window_set_keep_above(Pointer window, boolean setting);
     }
 
     public interface GObjectLib extends Library {
         long g_signal_connect_data(Pointer instance, String detailedSignal, Callback handler, Pointer data, Pointer destroyData, int connectFlags);
+    }
+
+    public interface GLibLib extends Library {
+        int g_idle_add(GSourceFunc function, Pointer data);
+    }
+
+    public interface GSourceFunc extends Callback {
+        boolean invoke(Pointer data);
     }
 
     public interface WebKitLib extends Library {
@@ -43,8 +58,10 @@ public class NativeAppWindow {
 
     private static GtkLib gtk;
     private static GObjectLib gobject;
+    private static GLibLib glib;
     private static WebKitLib webkit;
     private static Boolean supported;
+    private static volatile Pointer mainWindow;
 
     public static synchronized boolean isSupported() {
         if (supported != null) {
@@ -60,6 +77,12 @@ public class NativeAppWindow {
         try {
             gtk = Native.load("gtk-3", GtkLib.class);
             gobject = Native.load("gobject-2.0", GObjectLib.class);
+            try {
+                glib = Native.load("glib-2.0", GLibLib.class);
+            } catch (Throwable t) {
+                // glib functions can also be accessed via gobject-2.0
+                glib = Native.load("gobject-2.0", GLibLib.class);
+            }
 
             // Try WebKitGTK 4.1, fallback to 4.0 or 6.0
             try {
@@ -82,6 +105,18 @@ public class NativeAppWindow {
         }
     }
 
+    public static Pointer getMainWindow() {
+        return mainWindow;
+    }
+
+    public static GtkLib getGtk() {
+        return gtk;
+    }
+
+    public static GLibLib getGLib() {
+        return glib;
+    }
+
     public static void open(String url, String title, int width, int height, Runnable onClose) {
         if (!isSupported()) {
             throw new UnsupportedOperationException("Native desktop window is not supported on this platform/environment");
@@ -92,6 +127,7 @@ public class NativeAppWindow {
 
             // GTK_WINDOW_TOPLEVEL = 0
             Pointer window = gtk.gtk_window_new(0);
+            mainWindow = window;
             gtk.gtk_window_set_title(window, title);
             gtk.gtk_window_set_default_size(window, width > 0 ? width : 1280, height > 0 ? height : 850);
             // GTK_WIN_POS_CENTER = 1
@@ -111,6 +147,7 @@ public class NativeAppWindow {
             // Handle window close
             DestroyCallback destroyCallback = (w, d) -> {
                 log.info("Desktop application window closed by user");
+                mainWindow = null;
                 gtk.gtk_main_quit();
                 if (onClose != null) {
                     onClose.run();

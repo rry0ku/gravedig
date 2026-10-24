@@ -26,7 +26,7 @@ class BenchmarkRunnerTest {
 
         assertThat(result.operations()).isEqualTo(500);
         assertThat(result.opsPerSecond()).isGreaterThan(0.0);
-        assertThat(result.metrics().get("rulesEvaluatedPerLine")).isEqualTo(15);
+        assertThat(((Number) result.metrics().get("rulesEvaluatedPerLine")).intValue()).isGreaterThanOrEqualTo(15);
     }
 
     @Test

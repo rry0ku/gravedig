@@ -36,10 +36,11 @@ public class RuleController {
             }
 
             Pattern pattern;
+            Optional<Rule> ruleOpt = Optional.empty();
             if (req.getPattern() != null && !req.getPattern().isBlank()) {
                 pattern = Pattern.compile(req.getPattern());
             } else if (req.getRuleId() != null && !req.getRuleId().isBlank()) {
-                Optional<Rule> ruleOpt = scanService.getRules().stream()
+                ruleOpt = scanService.getRules().stream()
                         .filter(r -> r.getId().equalsIgnoreCase(req.getRuleId()))
                         .findFirst();
                 if (ruleOpt.isEmpty()) {
@@ -74,7 +75,25 @@ public class RuleController {
                 matches.add(new RuleTestResponse.MatchDetail(matchedText, redacted, start, end, entropy));
             }
 
-            ctx.json(RuleTestResponse.success(matches));
+            RuleTestResponse resp = RuleTestResponse.success(matches);
+            if (ruleOpt.isPresent()) {
+                Rule r = ruleOpt.get();
+                resp.setRuleId(r.getId());
+                resp.setRuleName(r.getName());
+                resp.setSeverity(r.getSeverity().name());
+            }
+            if (!matches.isEmpty()) {
+                resp.setEntropy(matches.get(0).getEntropy());
+                String masked = req.getSample();
+                for (RuleTestResponse.MatchDetail m : matches) {
+                    if (m.getMatch() != null && !m.getMatch().isEmpty()) {
+                        masked = masked.replace(m.getMatch(), m.getRedacted());
+                    }
+                }
+                resp.setMaskedSnippet(masked);
+            }
+
+            ctx.json(resp);
 
         } catch (Exception e) {
             ctx.status(HttpStatus.BAD_REQUEST).json(RuleTestResponse.error("Regex evaluation failed: " + e.getMessage()));

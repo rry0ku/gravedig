@@ -11,8 +11,12 @@ export interface Finding {
   severity: Severity;
   filePath: string;
   lineNumber: number;
+  columnNumber?: number;
   lineContent?: string;
+  snippetRedacted?: string;
+  secretRaw?: string;
   secretMasked?: string;
+  secretRedacted?: string;
   commitHash?: string;
   commitAuthor?: string;
   commitDate?: string;
@@ -80,6 +84,13 @@ export interface RuleTestResponse {
   severity?: string;
   entropy?: number;
   message?: string;
+  matches?: Array<{
+    match: string;
+    redacted: string;
+    start: number;
+    end: number;
+    entropy: number;
+  }>;
 }
 
 export interface FindingFilter {

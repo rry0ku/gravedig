@@ -36,6 +36,7 @@ class GravedigServerIntegrationTest {
 
     @BeforeAll
     static void startServer() throws Exception {
+        System.setProperty("gravedig.test.skipDialog", "true");
         // Create sample leaked file in tempDir
         Path leakedFile = tempDir.resolve("secret.env");
         Files.writeString(leakedFile, "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE\n");
@@ -52,6 +53,7 @@ class GravedigServerIntegrationTest {
 
     @AfterAll
     static void stopServer() {
+        System.clearProperty("gravedig.test.skipDialog");
         if (server != null) {
             server.stop();
         }
@@ -269,5 +271,28 @@ class GravedigServerIntegrationTest {
         HttpResponse<String> respAsset = client.send(reqAsset, HttpResponse.BodyHandlers.ofString());
         assertThat(respAsset.statusCode()).isEqualTo(200);
         assertThat(respAsset.body()).contains("gravedig");
+    }
+
+    @Test
+    @DisplayName("POST /api/fs/choose-folder requires authentication and responds properly")
+    void testChooseFolderEndpoint() throws Exception {
+        // 1. Without auth -> 401
+        HttpRequest unauthReq = HttpRequest.newBuilder()
+                .uri(URI.create(server.getBaseUrl() + "/api/fs/choose-folder"))
+                .POST(HttpRequest.BodyPublishers.ofString("{}"))
+                .build();
+        HttpResponse<String> unauthResp = client.send(unauthReq, HttpResponse.BodyHandlers.ofString());
+        assertThat(unauthResp.statusCode()).isEqualTo(401);
+
+        // 2. With auth -> 200 with JSON structure
+        HttpRequest authReq = HttpRequest.newBuilder()
+                .uri(URI.create(server.getBaseUrl() + "/api/fs/choose-folder"))
+                .header("X-Auth-Token", TEST_TOKEN)
+                .POST(HttpRequest.BodyPublishers.ofString("{\"initialPath\": \".\"}"))
+                .build();
+        HttpResponse<String> authResp = client.send(authReq, HttpResponse.BodyHandlers.ofString());
+        assertThat(authResp.statusCode()).isEqualTo(200);
+        JsonNode json = MAPPER.readTree(authResp.body());
+        assertThat(json.has("success")).isTrue();
     }
 }

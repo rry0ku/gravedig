@@ -7,7 +7,7 @@
   import LiveScanModal from './components/LiveScanModal.svelte';
   import RuleSandbox from './components/RuleSandbox.svelte';
   import ExportBar from './components/ExportBar.svelte';
-  import { getFindings, getScan, listScans } from './api';
+  import { clearAllScans, deleteScan, getFindings, getScan, listScans } from './api';
   import type { Finding, FindingFilter, ScanRecord } from './types';
 
   let activeTab: 'dashboard' | 'findings' | 'rules' = 'dashboard';
@@ -99,6 +99,37 @@
     inspectingFinding = updated;
     findings = findings.map((f) => (f.id === updated.id ? updated : f));
   }
+
+  function formatScanDate(d?: string): string {
+    if (!d) return 'Recent Scan';
+    const date = new Date(d);
+    return isNaN(date.getTime()) ? 'Recent Scan' : date.toLocaleString();
+  }
+
+  async function handleClearCurrentScan() {
+    if (!selectedScan) return;
+    const confirmClear = window.confirm(`Clear scan for "${selectedScan.targetPath}" and remove its findings from the dashboard?`);
+    if (!confirmClear) return;
+    try {
+      await deleteScan(selectedScan.id);
+      selectedScan = null;
+      await refreshScans();
+    } catch (err: any) {
+      alert(`Failed to clear scan: ${err.message}`);
+    }
+  }
+
+  async function handleClearAllScans() {
+    const confirmClear = window.confirm('Clear all scans and findings from the dashboard?');
+    if (!confirmClear) return;
+    try {
+      await clearAllScans();
+      selectedScan = null;
+      await refreshScans();
+    } catch (err: any) {
+      alert(`Failed to clear all scans: ${err.message}`);
+    }
+  }
 </script>
 
 <div class="app-layout">
@@ -114,7 +145,13 @@
     {#if scans.length > 0}
       <div class="scan-bar">
         <div class="scan-selector">
-          <label for="scan-select">Active Scan:</label>
+          <label for="scan-select">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            Active Scan:
+          </label>
           <select
             id="scan-select"
             value={selectedScan?.id}
@@ -122,14 +159,38 @@
           >
             {#each scans as s (s.id)}
               <option value={s.id}>
-                [{s.status}] {s.targetPath} — {new Date(s.startedAt).toLocaleString()} ({s.totalFindings} findings)
+                [{s.status}] {s.targetPath} — {formatScanDate(s.startedAt || s.createdAt || s.completedAt)} ({s.totalFindings} findings)
               </option>
             {/each}
           </select>
         </div>
 
         {#if selectedScan}
-          <ExportBar scanId={selectedScan.id} />
+          <div class="scan-actions-group">
+            <button
+              class="clear-scan-btn"
+              on:click={handleClearCurrentScan}
+              title="Clear this scanned directory and its findings from the dashboard"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                <line x1="10" y1="11" x2="10" y2="17"/>
+                <line x1="14" y1="11" x2="14" y2="17"/>
+              </svg>
+              Clear Current Scan
+            </button>
+            {#if scans.length > 1}
+              <button
+                class="clear-all-btn"
+                on:click={handleClearAllScans}
+                title="Clear all scans and findings from the dashboard"
+              >
+                Clear All
+              </button>
+            {/if}
+            <ExportBar scanId={selectedScan.id} />
+          </div>
         {/if}
       </div>
     {/if}
@@ -244,10 +305,56 @@
   .scan-selector label {
     font-weight: 600;
     color: var(--text-dim);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
   }
   .scan-selector select {
     font-family: var(--font-mono);
-    max-width: 500px;
+    max-width: 520px;
+    font-size: 0.825rem;
+  }
+
+  .scan-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+  }
+
+  .clear-scan-btn {
+    font-size: 0.75rem;
+    padding: 0.42rem 0.75rem;
+    background: transparent;
+    border: 1px solid rgba(244, 63, 94, 0.35);
+    color: var(--severity-critical);
+    border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.15s ease;
+  }
+  .clear-scan-btn:hover {
+    background: rgba(244, 63, 94, 0.12);
+    border-color: var(--severity-critical);
+    color: #fff;
+  }
+
+  .clear-all-btn {
+    font-size: 0.75rem;
+    padding: 0.42rem 0.65rem;
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-dim);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .clear-all-btn:hover {
+    border-color: var(--severity-critical);
+    color: var(--severity-critical);
   }
 
   .section-heading {
