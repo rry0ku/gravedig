@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Publish Release Assets
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build Frontend Production Distribution
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Build Shaded Uber-JAR
+        run: mvn clean package -DskipTests=false --batch-mode
+
+      - name: Prepare Release Artifacts & Checksums
+        run: |
+          mkdir -p release-dist
+          cp cli/target/gravedig.jar release-dist/gravedig.jar
+          cd release-dist
+          sha256sum gravedig.jar > gravedig.jar.sha256
+          cd ..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-dist/gravedig.jar
+            release-dist/gravedig.jar.sha256
+          draft: false
+          prerelease: false
+          generate_release_notes: true

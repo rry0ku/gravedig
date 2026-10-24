@@ -1,0 +1,170 @@
+rules:
+  - id: aws-access-key-id
+    name: AWS Access Key ID
+    regex: '\b(?:AKIA|ABIA|ACCA|ASIA)[0-9A-Z]{16}\b'
+    keywords:
+      - AKIA
+      - ABIA
+      - ACCA
+      - ASIA
+    entropyThreshold: 0.0
+    severity: CRITICAL
+    description: Identified an Amazon Web Services Access Key ID.
+    remediation: Revoke the key in AWS IAM and generate a new key pair.
+
+  - id: aws-secret-access-key
+    name: AWS Secret Access Key
+    regex: '(?i)(?:aws_secret_access_key|aws_secret|aws_key)\s*[:=]\s*["'']?([A-Za-z0-9\/+=]{40})["'']?'
+    keywords:
+      - aws_secret_access_key
+      - aws_secret
+      - aws_key
+    entropyThreshold: 0.0
+    severity: CRITICAL
+    description: Identified an Amazon Web Services Secret Access Key assignment.
+    remediation: Invalidate the secret immediately via AWS IAM and rotate credentials.
+
+  - id: github-pat
+    name: GitHub Personal Access Token
+    regex: '\b(?:ghp_[a-zA-Z0-9]{36}|gho_[a-zA-Z0-9]{36}|ghu_[a-zA-Z0-9]{36}|ghs_[a-zA-Z0-9]{36}|github_pat_[a-zA-Z0-9]{22}_[a-zA-Z0-9]{59})\b'
+    keywords:
+      - ghp_
+      - gho_
+      - ghu_
+      - ghs_
+      - github_pat_
+    entropyThreshold: 0.0
+    severity: CRITICAL
+    description: Identified a GitHub Personal Access Token (classic or fine-grained).
+    remediation: Revoke the token at GitHub Settings -> Developer settings -> Personal access tokens.
+
+  - id: gitlab-pat
+    name: GitLab Personal Access Token
+    regex: '\bglpat-[a-zA-Z0-9\-_]{20,22}\b'
+    keywords:
+      - glpat-
+    entropyThreshold: 0.0
+    severity: CRITICAL
+    description: Identified a GitLab Personal Access Token.
+    remediation: Revoke this token in GitLab User Settings -> Access Tokens.
+
+  - id: slack-token
+    name: Slack Token
+    regex: '\bxox[bpar]-[0-9]{10,13}-[0-9]{10,13}[a-zA-Z0-9-]*\b'
+    keywords:
+      - xoxb-
+      - xoxp-
+      - xoxa-
+      - xoxr-
+    entropyThreshold: 0.0
+    severity: HIGH
+    description: Identified a Slack bot, user, or app-level API token.
+    remediation: Revoke the token in your Slack API App configuration page.
+
+  - id: slack-webhook
+    name: Slack Incoming Webhook
+    regex: 'https:\/\/hooks\.slack\.com\/services\/T[a-zA-Z0-9_]{8,12}\/B[a-zA-Z0-9_]{8,12}\/[a-zA-Z0-9_]{24}'
+    keywords:
+      - hooks.slack.com
+    entropyThreshold: 0.0
+    severity: HIGH
+    description: Identified a Slack Incoming Webhook URL.
+    remediation: Invalidate and remove the incoming webhook integration in Slack.
+
+  - id: stripe-secret-key
+    name: Stripe Secret Key
+    regex: '\b[sr]k_live_[0-9a-zA-Z]{24,99}\b'
+    keywords:
+      - sk_live_
+      - rk_live_
+    entropyThreshold: 0.0
+    severity: CRITICAL
+    description: Identified a live Stripe secret key or restricted API key.
+    remediation: Roll the secret key immediately in the Stripe Dashboard Developers -> API keys.
+
+  - id: twilio-api-key
+    name: Twilio API Key
+    regex: '\bSK[0-9a-fA-F]{32}\b'
+    keywords:
+      - SK
+    entropyThreshold: 0.0
+    severity: HIGH
+    description: Identified a Twilio API Key SID/Secret.
+    remediation: Revoke the API key in the Twilio Console and issue a new one.
+
+  - id: sendgrid-api-key
+    name: SendGrid API Key
+    regex: '\bSG\.[a-zA-Z0-9_-]{22}\.[a-zA-Z0-9_-]{43}\b'
+    keywords:
+      - SG.
+    entropyThreshold: 0.0
+    severity: HIGH
+    description: Identified a SendGrid API Key.
+    remediation: Revoke the API key in Twilio SendGrid Settings -> API Keys.
+
+  - id: npm-access-token
+    name: npm Access Token
+    regex: '\bnpm_[a-zA-Z0-9]{36}\b'
+    keywords:
+      - npm_
+    entropyThreshold: 0.0
+    severity: HIGH
+    description: Identified an npm access token.
+    remediation: Revoke the token using `npm token revoke <token>` or on npmjs.com.
+
+  - id: pypi-api-token
+    name: PyPI API Token
+    regex: '\bpypi-AgEIcHlwaS5vcmc[A-Za-z0-9_-]{50,}\b'
+    keywords:
+      - pypi-
+    entropyThreshold: 0.0
+    severity: HIGH
+    description: Identified a PyPI upload or project API token.
+    remediation: Revoke the token in PyPI Account settings -> API tokens.
+
+  - id: jwt-token
+    name: JSON Web Token (JWT)
+    regex: '\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b'
+    keywords:
+      - eyJ
+    entropyThreshold: 0.0
+    severity: MEDIUM
+    description: Identified a signed JSON Web Token (JWT).
+    remediation: Inspect token claims and invalidate active sessions or signing secrets if compromised.
+
+  - id: private-key-header
+    name: Private Key Header
+    regex: '-----BEGIN (?:RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY(?: BLOCK)?-----'
+    keywords:
+      - BEGIN
+      - PRIVATE KEY
+    entropyThreshold: 0.0
+    severity: CRITICAL
+    description: Identified an unencrypted private cryptographic key block.
+    remediation: Immediately rotate the key pair and revoke any public certificates or authorizations.
+
+  - id: db-connection-url
+    name: Database Connection URL with Password
+    regex: '\b(?:postgres|postgresql|mysql|mongodb|redis|amqp|mariadb):\/\/[^\s:@/]+:[^\s:@/]+@[^\s/:]+'
+    keywords:
+      - '://'
+    entropyThreshold: 0.0
+    severity: CRITICAL
+    description: Identified a database connection string containing embedded plaintext credentials.
+    remediation: Change the database user password immediately and use secrets manager / environment variables.
+
+  - id: generic-secret-assignment
+    name: Generic Password or Secret Assignment
+    regex: '(?i)\b(?:password|passwd|pwd|secret|api_key|apikey|access_token|auth_token)\s*[:=]\s*["'']([^"''\s]{8,})["'']'
+    keywords:
+      - password
+      - passwd
+      - pwd
+      - secret
+      - api_key
+      - apikey
+      - token
+    entropyThreshold: 0.0
+    severity: MEDIUM
+    description: Identified a potential hardcoded password or credential assignment.
+    remediation: Remove hardcoded credential and replace with environment variable or secret manager lookup.

@@ -1,0 +1,215 @@
+:root {
+  --bg-main: #0b0d13;
+  --bg-surface: #121622;
+  --bg-card: #181d2c;
+  --bg-card-hover: #1f2538;
+  --bg-subtle: #242c40;
+  
+  --border-subtle: #252c3f;
+  --border-accent: #374261;
+  --border-glow: rgba(0, 255, 136, 0.25);
+  
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  
+  --accent-green: #00ff88;
+  --accent-green-bg: rgba(0, 255, 136, 0.12);
+  --accent-cyan: #00e5ff;
+  --accent-cyan-bg: rgba(0, 229, 255, 0.12);
+  
+  --severity-critical: #ff3366;
+  --severity-critical-bg: rgba(255, 51, 102, 0.15);
+  --severity-high: #ff8800;
+  --severity-high-bg: rgba(255, 136, 0, 0.15);
+  --severity-medium: #ffcc00;
+  --severity-medium-bg: rgba(255, 204, 0, 0.15);
+  --severity-low: #38bdf8;
+  --severity-low-bg: rgba(56, 189, 248, 0.15);
+  --severity-info: #a855f7;
+  --severity-info-bg: rgba(168, 85, 247, 0.15);
+  
+  --presence-alive: #00ff88;
+  --presence-alive-bg: rgba(0, 255, 136, 0.18);
+  --presence-buried: #64748b;
+  --presence-buried-bg: rgba(100, 116, 139, 0.2);
+  
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+  
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 15px rgba(0, 255, 136, 0.25);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+a {
+  color: var(--accent-cyan);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface);
+  color: var(--text-main);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+button:hover:not(:disabled) {
+  background-color: var(--bg-card-hover);
+  border-color: var(--border-accent);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.primary {
+  background-color: var(--accent-green);
+  color: #0b0d13;
+  border-color: var(--accent-green);
+  font-weight: 600;
+  box-shadow: 0 0 12px rgba(0, 255, 136, 0.3);
+}
+
+button.primary:hover:not(:disabled) {
+  background-color: #1aff96;
+  box-shadow: 0 0 18px rgba(0, 255, 136, 0.5);
+}
+
+button.danger {
+  background-color: var(--severity-critical-bg);
+  border-color: var(--severity-critical);
+  color: var(--severity-critical);
+}
+button.danger:hover:not(:disabled) {
+  background-color: var(--severity-critical);
+  color: #fff;
+}
+
+input, select, textarea {
+  font-family: inherit;
+  font-size: 0.875rem;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent-green);
+  box-shadow: 0 0 0 1px var(--accent-green);
+}
+
+/* Severity & Presence Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+
+.badge-critical { background: var(--severity-critical-bg); color: var(--severity-critical); border: 1px solid var(--severity-critical); }
+.badge-high { background: var(--severity-high-bg); color: var(--severity-high); border: 1px solid var(--severity-high); }
+.badge-medium { background: var(--severity-medium-bg); color: var(--severity-medium); border: 1px solid var(--severity-medium); }
+.badge-low { background: var(--severity-low-bg); color: var(--severity-low); border: 1px solid var(--severity-low); }
+.badge-info { background: var(--severity-info-bg); color: var(--severity-info); border: 1px solid var(--severity-info); }
+
+.badge-alive {
+  background: var(--presence-alive-bg);
+  color: var(--presence-alive);
+  border: 1px solid var(--presence-alive);
+  animation: pulse-alive 2s infinite ease-in-out;
+}
+
+.badge-buried {
+  background: var(--presence-buried-bg);
+  color: var(--text-muted);
+  border: 1px solid var(--text-dim);
+}
+
+@keyframes pulse-alive {
+  0%, 100% { box-shadow: 0 0 4px rgba(0, 255, 136, 0.2); }
+  50% { box-shadow: 0 0 10px rgba(0, 255, 136, 0.6); }
+}
+
+/* Modal and Drawers */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(5, 7, 12, 0.8);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+  max-width: 800px;
+  width: 95%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-main);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-accent);
+}
